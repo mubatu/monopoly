@@ -1,0 +1,22 @@
+{
+  "name": "monopoly",
+  "version": "0.1.0",
+  "description": "Monopoly (İstanbul baskısı) kare olasılığı Monte Carlo simülatörü",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "sim": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}

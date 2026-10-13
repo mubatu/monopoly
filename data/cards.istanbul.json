@@ -1,0 +1,38 @@
+{
+  "chance": [
+    { "id": "C01", "text": "Başlangıç'a ilerleyin.", "effect": "advance_to", "target": 0 },
+    { "id": "C02", "text": "Caddebostan'a ilerleyin.", "effect": "advance_to", "target": 24 },
+    { "id": "C03", "text": "Beyoğlu'na ilerleyin.", "effect": "advance_to", "target": 11 },
+    { "id": "C04", "text": "En yakın kamu kuruluşuna ilerleyin.", "effect": "advance_to_nearest_utility" },
+    { "id": "C05", "text": "En yakın ulaşım aracına ilerleyin.", "effect": "advance_to_nearest_station" },
+    { "id": "C06", "text": "En yakın ulaşım aracına ilerleyin.", "effect": "advance_to_nearest_station" },
+    { "id": "C07", "text": "Haydarpaşa Garı'na ilerleyin.", "effect": "advance_to", "target": 5 },
+    { "id": "C08", "text": "Yeniköy'e ilerleyin.", "effect": "advance_to", "target": 39 },
+    { "id": "C09", "text": "Üç kare geri gidin.", "effect": "go_back", "steps": 3 },
+    { "id": "C10", "text": "Doğrudan Kodes'e girin.", "effect": "go_to_jail" },
+    { "id": "C11", "text": "Kodes'ten Ücretsiz Çık.", "effect": "get_out_of_jail_free" },
+    { "id": "C12", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "C13", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "C14", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "C15", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "C16", "text": "Düz kart (hareket etkisi yok)", "effect": "none" }
+  ],
+  "communityChest": [
+    { "id": "K01", "text": "Başlangıç'a ilerleyin.", "effect": "advance_to", "target": 0 },
+    { "id": "K02", "text": "Doğrudan Kodes'e girin.", "effect": "go_to_jail" },
+    { "id": "K03", "text": "Kodes'ten Ücretsiz Çık.", "effect": "get_out_of_jail_free" },
+    { "id": "K04", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K05", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K06", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K07", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K08", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K09", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K10", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K11", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K12", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K13", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K14", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K15", "text": "Düz kart (hareket etkisi yok)", "effect": "none" },
+    { "id": "K16", "text": "Düz kart (hareket etkisi yok)", "effect": "none" }
+  ]
+}
