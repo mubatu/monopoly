@@ -54,8 +54,8 @@ interface LabelOptions {
   maxLines: number;
   color: string;
   weight?: number;
-  /** "top": y is the top of the first line; "middle": the block is centred on y. */
-  anchor?: "top" | "middle";
+  /** "top": y is the top of the first line; "middle": the block is centred on y; "bottom": y is the bottom of the last line. */
+  anchor?: "top" | "middle" | "bottom";
   letterSpacing?: number;
 }
 
@@ -91,7 +91,7 @@ function label(ctx: Ctx, text: string, x: number, y: number, options: LabelOptio
 
   const lineHeight = size * 1.12;
   const height = lines.length * lineHeight;
-  const top = options.anchor === "middle" ? y - height / 2 : y;
+  const top = options.anchor === "middle" ? y - height / 2 : options.anchor === "bottom" ? y - height : y;
   ctx.fillStyle = options.color;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -144,11 +144,24 @@ const PCT_OFFSET = 0.33;
 /**
  * Draws an edge square in its own frame: origin at the centre, inner end up, outer end
  * down. In the distribution view (`heat`) the icon is left out to make room for the number.
+ * `upright` turns the name half a turn in place, for squares whose frame is upside down.
  */
-function drawEdgeSquare(ctx: Ctx, square: Square, k: number, bg: string, heat: boolean): void {
+function drawEdgeSquare(ctx: Ctx, square: Square, k: number, bg: string, heat: boolean, upright: boolean): void {
   const ink = heat ? inkFor(bg) : BOARD_INK;
   const top = -CORNER / 2;
   const maxWidth = 0.9 * k;
+  const name = (text: string, y: number): void => {
+    const options: LabelOptions = { size: 0.135 * k, maxWidth, maxLines: 3, color: ink };
+    if (!upright) {
+      label(ctx, text, 0, y, options);
+      return;
+    }
+    ctx.save();
+    ctx.translate(0, y);
+    ctx.rotate(Math.PI);
+    label(ctx, text, 0, 0, { ...options, anchor: "bottom" });
+    ctx.restore();
+  };
 
   if (square.type === "property") {
     ctx.fillStyle = groupColor(square.group);
@@ -159,17 +172,12 @@ function drawEdgeSquare(ctx: Ctx, square: Square, k: number, bg: string, heat: b
     ctx.moveTo(-0.5 * k, (top + BAND_DEPTH) * k);
     ctx.lineTo(0.5 * k, (top + BAND_DEPTH) * k);
     ctx.stroke();
-    label(ctx, upper(square.name), 0, (top + BAND_DEPTH + 0.09) * k, {
-      size: 0.135 * k,
-      maxWidth,
-      maxLines: 3,
-      color: ink,
-    });
+    name(upper(square.name), (top + BAND_DEPTH + 0.09) * k);
     return;
   }
 
   const art = artFor(square);
-  label(ctx, upper(art.title), 0, (top + 0.1) * k, { size: 0.135 * k, maxWidth, maxLines: 3, color: ink });
+  name(upper(art.title), (top + 0.1) * k);
   if (heat) return;
   if (art.mark !== undefined) {
     ctx.font = `700 ${0.95 * k}px Georgia, "Times New Roman", serif`;
@@ -364,7 +372,8 @@ export function drawBoard(ctx: Ctx, sizePx: number, board: Board, options: DrawO
     ctx.save();
     ctx.translate(cx * k, cy * k);
     ctx.rotate(angle);
-    drawEdgeSquare(ctx, square, k, bg, pct !== null);
+    // In the distribution view the top row's names are turned upright like the numbers.
+    drawEdgeSquare(ctx, square, k, bg, pct !== null, pct !== null && Math.cos(angle) < -0.5);
     ctx.restore();
 
     if (pct !== null) {
