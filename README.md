@@ -24,7 +24,8 @@ npm test
 ```
 
 Motorun çalışma zamanı bağımlılığı yoktur; `src/` altında `cli.ts` dışındaki dosyalar
-`fs`, `process`, `console` kullanmaz ve tarayıcıda da çalışır.
+`fs`, `process`, `console` kullanmaz ve tarayıcıda da çalışır. Tek çalışma zamanı
+bağımlılığı olan `three` yalnızca `web/` altındaki görselleştirme içindir.
 
 ## Kullanım
 
@@ -50,8 +51,8 @@ Kodes özeti ve grup toplamlarını basar.
 Seçenekler `--games 100` veya `--games=100` biçiminde yazılabilir. Geçersiz değerde
 araç açıklayıcı bir hata basıp 1 koduyla çıkar.
 
-Diğer komutlar: `npm run sim -- <seçenekler>` (CLI kısayolu), `npm run typecheck`,
-`npm run build` (`dist/` altına derler).
+Diğer komutlar: `npm run sim -- <seçenekler>` (CLI kısayolu), `npm run typecheck`
+(motor + web), `npm run build` (motoru `dist/` altına derler).
 
 ### Kod içinden
 
@@ -66,6 +67,58 @@ const result = runSimulation(
 
 Verilmeyen alanlar varsayılanlarla doldurulur; seed verilmezse saatten üretilir ve
 `result.config.seed` içinde raporlanır.
+
+## Görselleştirme
+
+Tarayıcıda çalışan 3D arayüz: tahta, piyonlar, zarlar ve kart desteleri; altta
+Başlat/Durdur ve hız kaydırıcısı; canlı güncellenen dağılım görünümü. Motoru doğrudan
+kullanır, yani arayüzdeki sayılar aynı seed ile CLI'ın ürettikleriyle birebir aynıdır.
+
+```bash
+npm run dev
+```
+
+Vite'ın yazdığı adresi (varsayılan `http://localhost:5173`) tarayıcıda açın.
+Statik derleme için `npm run build:web` (çıktı `dist-web/`), derlenmiş hali denemek
+için `npm run preview`.
+
+### Kontroller
+
+- **Başlat / Durdur / Devam Et**: alttaki büyük buton; `Boşluk` tuşu da aynı işi yapar.
+  Durdurulduğunda süren hamlenin animasyonu tamamlanır, yeni tur başlamaz.
+- **Hız kaydırıcısı**: 0,5 – 1.000.000 tur/sn, logaritmik. "Tur" bir oyuncunun sırasıdır.
+- **Dağılımı Göster**: tahtaya üstten bakan ısı haritası (aşağıda). `Esc` kapatır.
+- **Sıfırla**: sayaçları ve piyonları başa alır, ayarlar panelindeki değerleri uygular.
+- **Ayarlar** (sağ üst): piyon sayısı (2–6), Kodes'te hemen ödeyenlerin oranı, seed
+  (boşsa rastgele seçilir ve sol üstte gösterilir), oyun başına tur (boşsa tek oyun
+  kesintisiz sürer). Henüz tur oynanmadıysa değişiklik anında uygulanır; koşu verisi
+  varken **Uygula ve Sıfırla** ile uygulanır. Simülasyon çalışırken ayarlar kilitlidir.
+- Fareyle sürükleyerek kamera döndürülür, tekerlekle yakınlaştırılır.
+
+### Hız rejimleri
+
+| Rejim | Hız | Ne görünür |
+|-------|-----|------------|
+| Animasyon | ≤ 10 tur/sn | Zar yuvarlanır, piyon kare kare zıplar, çekilen kart gösterilir. Kartla ileri gitme ve Kodes'e giriş tek bir yüksek yayla, "3 kare geri" geriye zıplayarak oynar. |
+| Hızlı | 10–60 tur/sn | Zar değeri doğrudan görünür, piyon turun bittiği kareye tek hareketle kayar. |
+| Turbo | > 60 tur/sn | Animasyon yoktur; piyonlar her karede güncel konumlarına ışınlanır. Sol üstteki "Hız" hedefi değil, ölçülen hızı gösterir. |
+
+Kodes'teki piyonlar hücrenin içinde, ziyaretçiler köşenin dış şeridinde durur. Elinde
+"Kodes'ten Ücretsiz Çık" kartı olan piyonun yanında küçük bir kart görünür.
+
+### Dağılım görünümü
+
+Her kare, seçilen sayaca (**Geliş** veya **Final**) göre renklendirilir ve yüzdesi
+üzerine yazılır; Kodes köşesinde hücre (Kodes'e girişler) ile dış şerit (Sadece
+Ziyaretçi) ayrıdır. Renk ölçeği verinin en düşük ve en yüksek değeri arasına yayılır
+(lejantta ikisi de yazar); kareler arasındaki fark bir iki yüzde puanı olduğu için
+sıfırdan başlayan bir ölçekte hepsi aynı tonda görünürdü. Yanda yüzdeye göre sıralı
+kare tablosu ve grup toplamları vardır; bir karenin üzerine gelince geliş ve final
+sayıları birlikte görünür. Simülasyon sürerken saniyede birkaç kez güncellenir.
+**JSON indir** o anki sonucu aşağıdaki şemayla kaydeder.
+
+Arayüzde kesintisiz modda `N` tam tur (her oyuncu `N` kez) oynandığında sonuç,
+`npx tsx src/cli.ts --games 1 --turns N` ile aynı seed ve ayarlarla üretilenle aynıdır.
 
 ## Neyin nasıl sayıldığı
 
@@ -146,12 +199,24 @@ src/types.ts               ortak tipler
 src/rng.ts                 tohumlu RNG (xoshiro128**), rollDie, shuffle
 src/board.ts               tahta yükleme/doğrulama, nearestStation / nearestUtility
 src/cards.ts               kart yükleme/doğrulama, Deck
-src/engine.ts              playTurn: hareket, Kodes, kart çözümleme
+src/engine.ts              playTurn: hareket, Kodes, kart çözümleme, tur olayları (TurnObserver)
 src/stats.ts               sayaçlar ve sonuç özeti
 src/simulate.ts            runSimulation, yapılandırma doğrulaması
+src/session.ts             Session: tur tur sürülebilen simülasyon (arayüz bunu kullanır)
 src/cli.ts                 komut satırı aracı
-test/                      vitest testleri
+web/index.html             arayüz iskeleti
+web/src/main.ts            kurulum ve bağlama
+web/src/controller.ts      durum makinesi ve ana döngü (hız rejimleri)
+web/src/speed.ts           kaydırıcı ↔ hız eşlemesi
+web/src/layout.ts          tahta geometrisi, piyon yuvaları
+web/src/timeline.ts        tur olayları → animasyon adımları
+web/src/boardArt.ts        tahtanın Canvas 2D çizimi (3D doku ve dağılım görünümü ortak)
+web/src/scene/             Three.js sahnesi: tahta, piyonlar, zarlar, desteler
+web/src/ui/                kontroller, sayaçlar, ayarlar, dağılım görünümü
+test/                      vitest testleri (test/web: arayüzün DOM'suz modülleri)
 ```
+
+Tahtadaki her şey kodla çizilir; Hasbro'ya ait logo, maskot veya görsel kullanılmaz.
 
 ## Veri kaynakları
 

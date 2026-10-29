@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Monopoly Kare Olasılığı Simülatörü</title>
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <canvas id="scene" aria-label="3D Monopoly tahtası"></canvas>
+
+    <div class="top">
+      <section id="hud" class="panel hud" aria-label="Sayaçlar">
+        <dl>
+          <div><dt>Tur</dt><dd id="hud-turns">0</dd></div>
+          <div><dt>Zar atışı</dt><dd id="hud-rolls">0</dd></div>
+          <div><dt>Oyun</dt><dd id="hud-games">1</dd></div>
+          <div><dt>Hız</dt><dd id="hud-speed">—</dd></div>
+          <div><dt>Seed</dt><dd id="hud-seed"></dd></div>
+        </dl>
+        <p id="hud-last" class="hud-last" aria-live="off"></p>
+      </section>
+
+      <details id="settings" class="panel settings" open>
+        <summary>Ayarlar</summary>
+        <fieldset id="settings-fields">
+          <div class="field">
+            <span class="field-label">Piyon sayısı</span>
+            <div id="set-players" class="segmented" role="radiogroup" aria-label="Piyon sayısı"></div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="set-jail-pay">
+              Kodes'te hemen ödeyenler <output id="set-jail-pay-value"></output>
+            </label>
+            <input id="set-jail-pay" type="range" min="0" max="100" step="1" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="set-seed">Seed</label>
+            <input id="set-seed" type="text" inputmode="numeric" placeholder="rastgele" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="set-turns">Oyun başına tur</label>
+            <input id="set-turns" type="text" inputmode="numeric" placeholder="kesintisiz" autocomplete="off" />
+          </div>
+        </fieldset>
+        <p id="settings-error" class="error" role="alert" hidden></p>
+        <button id="settings-apply" type="button" hidden>Uygula ve Sıfırla</button>
+      </details>
+    </div>
+
+    <section id="controls" class="panel controls" aria-label="Simülasyon kontrolleri">
+      <div id="toast" class="toast" role="status" hidden>
+        <strong id="toast-deck"></strong>
+        <span id="toast-text"></span>
+      </div>
+      <button id="toggle" class="primary" type="button">Başlat</button>
+      <div class="speed">
+        <span>Yavaş</span>
+        <input id="speed" type="range" aria-label="Simülasyon hızı" />
+        <span>Hızlı</span>
+      </div>
+      <p class="speed-readout"><span id="speed-value"></span> · <span id="speed-regime"></span></p>
+      <div class="row">
+        <button id="show-dist" type="button">Dağılımı Göster</button>
+        <button id="reset" type="button">Sıfırla</button>
+      </div>
+    </section>
+
+    <div id="dist" class="overlay" role="dialog" aria-modal="true" aria-labelledby="dist-title" hidden>
+      <div class="dist-panel">
+        <div class="dist-board">
+          <canvas id="dist-canvas"></canvas>
+          <p id="dist-empty" class="dist-empty">Henüz veri yok</p>
+        </div>
+        <aside class="dist-side">
+          <header>
+            <h2 id="dist-title">Kare dağılımı</h2>
+            <button id="dist-close" type="button" aria-label="Kapat">✕</button>
+          </header>
+          <div class="segmented" role="radiogroup" aria-label="Sayaç">
+            <input type="radio" name="dist-mode" id="dist-mode-landings" value="landings" checked />
+            <label for="dist-mode-landings">Geliş</label>
+            <input type="radio" name="dist-mode" id="dist-mode-final" value="final" />
+            <label for="dist-mode-final">Final</label>
+          </div>
+          <p id="dist-summary" class="muted"></p>
+          <div class="legend">
+            <span id="dist-legend-min"></span>
+            <div id="dist-legend-bar" class="legend-bar"></div>
+            <span id="dist-legend-max"></span>
+          </div>
+          <div class="tables">
+            <table>
+              <thead>
+                <tr><th class="num">#</th><th>Kare</th><th class="num">%</th><th class="num">Sayı</th></tr>
+              </thead>
+              <tbody id="dist-squares"></tbody>
+            </table>
+            <table>
+              <thead>
+                <tr><th>Grup</th><th class="num">%</th><th class="num">Sayı</th></tr>
+              </thead>
+              <tbody id="dist-groups"></tbody>
+            </table>
+          </div>
+          <button id="dist-download" type="button">JSON indir</button>
+        </aside>
+      </div>
+      <div id="dist-tooltip" class="tooltip" hidden></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

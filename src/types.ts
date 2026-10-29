@@ -70,6 +70,8 @@ export interface SimulationConfig {
 }
 
 export interface PlayerState {
+  /** Seat number (0-based); fixed for the lifetime of the state */
+  id: number;
   pos: number;
   inJail: boolean;
   /** Failed escape rolls in the current jail stay */
@@ -100,6 +102,40 @@ export interface Stats {
   chestDraws: number;
 }
 
+/** How a pawn reached a square: 0 = dice roll, 1 = card moving it forward, 2 = card moving it back. */
+export type MoveVia = 0 | 1 | 2;
+export const VIA_ROLL = 0;
+export const VIA_CARD_FORWARD = 1;
+export const VIA_CARD_BACK = 2;
+
+/** How a player left jail: 0 = "get out of jail free" card, 1 = paid, 2 = rolled a double, 3 = third failed roll. */
+export type JailExit = 0 | 1 | 2 | 3;
+export const EXIT_CARD = 0;
+export const EXIT_PAY = 1;
+export const EXIT_DOUBLE = 2;
+export const EXIT_THIRD_ROLL = 3;
+
+export type DeckKind = "chance" | "communityChest";
+
+/**
+ * Receives what happens during a turn, in order. Meant for animation; the engine
+ * never allocates for these calls and behaves identically with or without an observer.
+ */
+export interface TurnObserver {
+  /** Dice were rolled (including escape attempts in jail). */
+  roll(player: number, d1: number, d2: number): void;
+  /** The pawn stopped on a square; one call per `Stats.landings` increment. */
+  land(player: number, from: number, to: number, via: MoveVia): void;
+  /** A card was drawn; `cardIndex` is its position in that deck's `cards`. */
+  card(player: number, deck: DeckKind, cardIndex: number): void;
+  /** The player went to jail; `reason` indexes JAIL_ENTRY_REASONS. */
+  jailEnter(player: number, reason: number): void;
+  /** The player got out of jail; a move follows in the same turn. */
+  jailExit(player: number, how: JailExit): void;
+  /** The player failed to roll a double and stays in jail. */
+  jailStay(player: number): void;
+}
+
 export interface GameState {
   board: Board;
   players: PlayerState[];
@@ -108,6 +144,7 @@ export interface GameState {
   rng: RandomSource;
   stats: Stats;
   jailPayProbability: number;
+  observer: TurnObserver | null;
 }
 
 export interface SquareResult extends Square {

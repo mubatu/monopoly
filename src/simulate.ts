@@ -61,13 +61,18 @@ export function resolveConfig(input: Partial<SimulationConfig> = {}): Simulation
     throw new ConfigError("trackPerGame", `trackPerGame true veya false olmalı (verilen: ${String(trackPerGame)}).`);
   }
 
+  const seed = input.seed ?? Date.now() >>> 0;
+  if (typeof seed !== "number" || !Number.isInteger(seed) || seed < -0x80000000 || seed > 0xffffffff) {
+    throw new ConfigError("seed", `seed 32-bit bir tam sayı olmalı (verilen: ${String(seed)}).`);
+  }
+
   return {
     edition,
     players: requireInteger("players", input.players ?? DEFAULT_CONFIG.players, MIN_PLAYERS, MAX_PLAYERS),
     games: requireInteger("games", input.games ?? DEFAULT_CONFIG.games, 1, Infinity),
     turnsPerGame: requireInteger("turnsPerGame", input.turnsPerGame ?? DEFAULT_CONFIG.turnsPerGame, 1, Infinity),
     jailPayProbability,
-    seed: requireInteger("seed", input.seed ?? Date.now() >>> 0, -0x80000000, 0xffffffff) >>> 0,
+    seed: seed >>> 0,
     trackPerGame,
   };
 }

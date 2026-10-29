@@ -11,7 +11,21 @@ import {
 } from "./cards.js";
 import type { RandomSource } from "./rng.js";
 import { createStats } from "./stats.js";
-import type { GameState, PlayerState, Stats } from "./types.js";
+import {
+  EXIT_CARD,
+  EXIT_DOUBLE,
+  EXIT_PAY,
+  EXIT_THIRD_ROLL,
+  VIA_CARD_BACK,
+  VIA_CARD_FORWARD,
+  VIA_ROLL,
+  type GameState,
+  type JailExit,
+  type MoveVia,
+  type PlayerState,
+  type Stats,
+  type TurnObserver,
+} from "./types.js";
 
 // Indices into Stats.jailEntryReason; must match the order of JAIL_ENTRY_REASONS.
 export const REASON_SQUARE = 0;
@@ -28,6 +42,7 @@ export interface GameSetup {
   rng: RandomSource;
   jailPayProbability: number;
   stats?: Stats;
+  observer?: TurnObserver | null;
 }
 
 function resetPlayer(player: PlayerState): void {
@@ -43,7 +58,7 @@ function resetPlayer(player: PlayerState): void {
 export function createGameState(setup: GameSetup): GameState {
   const players: PlayerState[] = [];
   for (let i = 0; i < setup.players; i++) {
-    players.push({ pos: 0, inJail: false, jailTurns: 0, jailStrategy: "roll", heldChance: -1, heldChest: -1 });
+    players.push({ id: i, pos: 0, inJail: false, jailTurns: 0, jailStrategy: "roll", heldChance: -1, heldChest: -1 });
   }
   return {
     board: setup.board,
@@ -53,6 +68,7 @@ export function createGameState(setup: GameSetup): GameState {
     rng: setup.rng,
     stats: setup.stats ?? createStats(setup.board.size),
     jailPayProbability: setup.jailPayProbability,
+    observer: setup.observer ?? null,
   };
 }
 
@@ -82,12 +98,14 @@ export function sendToJail(state: GameState, player: PlayerState, reason: number
   stats.jailEntryReason[reason]++;
   // Entering jail always ends the current move, so it is that roll's final position.
   stats.finalLandings[state.board.size]++;
+  if (state.observer !== null) state.observer.jailEnter(player.id, reason);
 }
 
-function rollDice(state: GameState): number {
+function rollDice(state: GameState, player: PlayerState): number {
   const d1 = state.rng.rollDie();
   const d2 = state.rng.rollDie();
   const stats = state.stats;
+  if (state.observer !== null) state.observer.roll(player.id, d1, d2);
   stats.totalRolls++;
   stats.diceSums[d1 + d2]++;
   if (d1 === d2) {
@@ -101,7 +119,7 @@ function normalTurn(state: GameState, player: PlayerState): void {
   let doubles = 0;
   for (;;) {
     // rollDice returns the sum, negated when the dice are a double.
-    const roll = rollDice(state);
+    const roll = rollDice(state, player);
     if (roll > 0) {
       moveBy(state, player, roll);
       return;
@@ -119,45 +137,53 @@ function jailTurn(state: GameState, player: PlayerState): void {
   if (player.heldChance >= 0) {
     state.chance.returnToBottom(player.heldChance);
     player.heldChance = -1;
-    player.inJail = false;
+    leaveJail(state, player, EXIT_CARD);
     normalTurn(state, player);
     return;
   }
   if (player.heldChest >= 0) {
     state.chest.returnToBottom(player.heldChest);
     player.heldChest = -1;
-    player.inJail = false;
+    leaveJail(state, player, EXIT_CARD);
     normalTurn(state, player);
     return;
   }
   if (player.jailStrategy === "pay") {
-    player.inJail = false;
+    leaveJail(state, player, EXIT_PAY);
     normalTurn(state, player);
     return;
   }
 
-  const roll = rollDice(state);
+  const roll = rollDice(state, player);
   if (roll < 0) {
     // Out on a double: moves with this roll but gets no extra roll.
-    player.inJail = false;
+    leaveJail(state, player, EXIT_DOUBLE);
     moveBy(state, player, -roll);
     return;
   }
   if (++player.jailTurns === MAX_JAIL_ROLLS) {
     // Third failed attempt: pays and moves with the same roll.
-    player.inJail = false;
+    leaveJail(state, player, EXIT_THIRD_ROLL);
     moveBy(state, player, roll);
     return;
   }
   state.stats.turnsInJail++;
+  if (state.observer !== null) state.observer.jailStay(player.id);
+}
+
+function leaveJail(state: GameState, player: PlayerState, how: JailExit): void {
+  player.inJail = false;
+  if (state.observer !== null) state.observer.jailExit(player.id, how);
 }
 
 /** Moves forward, resolves whatever the pawn lands on and records where the roll ended. */
 function moveBy(state: GameState, player: PlayerState, steps: number): void {
   const stats = state.stats;
-  const pos = (player.pos + steps) % state.board.size;
+  const from = player.pos;
+  const pos = (from + steps) % state.board.size;
   player.pos = pos;
   stats.landings[pos]++;
+  if (state.observer !== null) state.observer.land(player.id, from, pos, VIA_ROLL);
   resolveLanding(state, player);
   if (!player.inJail) stats.finalLandings[player.pos]++;
 }
@@ -189,7 +215,9 @@ function drawCard(state: GameState, player: PlayerState, deck: Deck, isChance: b
   else stats.chestDraws++;
 
   const card = deck.draw();
+  if (state.observer !== null) state.observer.card(player.id, isChance ? "chance" : "communityChest", card);
   let pos: number;
+  let via: MoveVia = VIA_CARD_FORWARD;
   switch (deck.effects[card]) {
     case EFFECT_ADVANCE_TO:
       pos = deck.params[card];
@@ -202,6 +230,7 @@ function drawCard(state: GameState, player: PlayerState, deck: Deck, isChance: b
       break;
     case EFFECT_GO_BACK:
       pos = (player.pos - deck.params[card] + board.size) % board.size;
+      via = VIA_CARD_BACK;
       break;
     case EFFECT_GO_TO_JAIL:
       sendToJail(state, player, isChance ? REASON_CHANCE_CARD : REASON_CHEST_CARD);
@@ -214,7 +243,9 @@ function drawCard(state: GameState, player: PlayerState, deck: Deck, isChance: b
     default:
       return false;
   }
+  const from = player.pos;
   player.pos = pos;
   stats.landings[pos]++;
+  if (state.observer !== null) state.observer.land(player.id, from, pos, via);
   return true;
 }

@@ -448,7 +448,7 @@ describe("startGame", () => {
     startGame(state);
 
     expect(state.players).toHaveLength(3);
-    expect(player).toEqual({ pos: 0, inJail: false, jailTurns: 0, jailStrategy: "roll", heldChance: -1, heldChest: -1 });
+    expect(player).toEqual({ id: 2, pos: 0, inJail: false, jailTurns: 0, jailStrategy: "roll", heldChance: -1, heldChest: -1 });
     expect(state.chance.size).toBe(16);
     expect(state.chest.size).toBe(16);
     expect(state.chance.order()).not.toEqual(Array.from({ length: 16 }, (_, i) => i));
