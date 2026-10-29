@@ -54,8 +54,6 @@ doubles in a row, the Go to Jail square, the rules for getting out of jail, and 
 Community Chest cards that are actually drawn (shuffled deck, a drawn card goes back to
 the bottom, the "Get Out of Jail Free" card stays with the player).
 
-For design and rule details see [PLAN.md](PLAN.md).
-
 ## Setup
 
 Requires Node 22 or later.
