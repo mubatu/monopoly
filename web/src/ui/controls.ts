@@ -23,10 +23,11 @@ export interface ControlsHandlers {
   onToggle(): void;
   onSpeed(speed: number): void;
   onShowDistribution(): void;
+  onShowCards(): void;
   onReset(): void;
 }
 
-/** The bottom panel: start/stop, speed slider, distribution and reset buttons. */
+/** The bottom panel: start/stop, speed slider, distribution, cards and reset buttons. */
 export class Controls {
   private readonly toggle = byId<HTMLButtonElement>("toggle");
   private readonly slider = byId<HTMLInputElement>("speed");
@@ -46,6 +47,7 @@ export class Controls {
       handlers.onSpeed(speed);
     });
     byId("show-dist").addEventListener("click", () => handlers.onShowDistribution());
+    byId("show-cards").addEventListener("click", () => handlers.onShowCards());
     byId("reset").addEventListener("click", () => handlers.onReset());
     this.showSpeed(this.speed);
   }

@@ -88,6 +88,7 @@ için `npm run preview`.
   Durdurulduğunda süren hamlenin animasyonu tamamlanır, yeni tur başlamaz.
 - **Hız kaydırıcısı**: 0,5 – 1.000.000 tur/sn, logaritmik. "Tur" bir oyuncunun sırasıdır.
 - **Dağılımı Göster**: tahtaya üstten bakan ısı haritası (aşağıda). `Esc` kapatır.
+- **Kartlar**: Şans ve Kamu Fonu destelerinin içeriği; aynı kartlar adediyle tek satırda. `Esc` kapatır.
 - **Sıfırla**: sayaçları ve piyonları başa alır, ayarlar panelindeki değerleri uygular.
 - **Ayarlar** (sağ üst): piyon sayısı (2–6), Kodes'te hemen ödeyenlerin oranı, seed
   (boşsa rastgele seçilir ve sol üstte gösterilir), oyun başına tur (boşsa tek oyun
@@ -212,7 +213,7 @@ web/src/layout.ts          tahta geometrisi, piyon yuvaları
 web/src/timeline.ts        tur olayları → animasyon adımları
 web/src/boardArt.ts        tahtanın Canvas 2D çizimi (3D doku ve dağılım görünümü ortak)
 web/src/scene/             Three.js sahnesi: tahta, piyonlar, zarlar, desteler
-web/src/ui/                kontroller, sayaçlar, ayarlar, dağılım görünümü
+web/src/ui/                kontroller, sayaçlar, ayarlar, dağılım görünümü, kart listesi
 test/                      vitest testleri (test/web: arayüzün DOM'suz modülleri)
 ```
 

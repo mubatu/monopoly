@@ -1,10 +1,12 @@
 import "./styles.css";
 import { loadBoard } from "../../src/board.js";
+import { loadCards } from "../../src/cards.js";
 import { ConfigError } from "../../src/session.js";
 import type { SimulationConfig } from "../../src/types.js";
 import { Controller, type Settings } from "./controller.js";
 import { BoardScene } from "./scene/scene.js";
 import { DECK_THEME } from "./theme.js";
+import { CardsView } from "./ui/cards.js";
 import { Controls } from "./ui/controls.js";
 import { DistributionView } from "./ui/distribution.js";
 import { byId } from "./ui/dom.js";
@@ -55,6 +57,7 @@ const controls = new Controls({
   onToggle: () => controller.toggle(),
   onSpeed: (speed) => controller.setSpeed(speed),
   onShowDistribution: () => distribution.open(),
+  onShowCards: () => cards.open(),
   onReset: () => restart(settingsPanel.read()),
 });
 
@@ -83,6 +86,7 @@ const controller = new Controller(
 controller.setSpeed(controls.speed);
 
 const distribution = new DistributionView(board, () => controller.snapshot());
+const cards = new CardsView(loadCards("istanbul", board));
 
 // Panels cover parts of the view; tell the scene where they are so the board stays clear of them.
 // The strip above the control panel is where the card toast appears.
@@ -115,6 +119,10 @@ window.addEventListener("resize", reportObstacles);
 reportObstacles();
 
 window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && cards.isOpen) {
+    cards.close();
+    return;
+  }
   if (event.key === "Escape" && distribution.isOpen) {
     distribution.close();
     return;
