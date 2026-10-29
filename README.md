@@ -1,19 +1,64 @@
 # monopoly
 
-Klasik Monopoly'de (İstanbul baskısı) piyonların hangi karelere ne sıklıkla geldiğini
-Monte Carlo yöntemiyle ölçen simülasyon motoru ve komut satırı aracı.
+**How often does a pawn land on each square of Monopoly?** A seeded Monte Carlo engine
+that plays the İstanbul edition turn by turn, with a 3D board to watch it happen and a
+heatmap of where the pawns end up.
 
-Sistem yalnızca zar atar ve ilerler: mülk, kira, para, ev/otel yoktur. Hareketi
-etkileyen kuralların hepsi uygulanır: çift atınca tekrar atma, üst üste üç çiftte
-Kodes, Kodes'e Gir karesi, Kodes'ten çıkış kuralları ve gerçekten çekilen Şans /
-Kamu Fonu kartları (karıştırılmış deste, çekilen kart alta döner, "Kodes'ten
-Ücretsiz Çık" kartı oyuncuda kalır).
+**▶ Live: [monopoly.mubatu.com](https://monopoly.mubatu.com)**
 
-Tasarım ve kural ayrıntıları için bkz. [PLAN.md](PLAN.md).
+![The 3D board with four pawns, the dice and both card decks](docs/images/preview.webp)
 
-## Kurulum
+- **Every movement rule.** Doubles and re-rolls, jail on three doubles, Go to Jail, the
+  ways out of jail, and real Chance / Community Chest decks.
+- **Watch or crunch.** From half a turn per second with animated dice and hopping
+  pawns, up to a million turns per second in turbo mode.
+- **Reproducible.** The same seed gives the same numbers in the browser and on the
+  command line.
+- **No server.** Everything runs in the browser; the site is plain static files.
 
-Node 22 veya üstü gerekir.
+## Results: 100 million turns
+
+![Heatmap of landing percentages after 100,091,600 turns](docs/images/distribution.webp)
+
+If every square were equally likely, each would get about 2.4% of the landings. After
+100,091,600 turns they don't:
+
+- **Jail is the busiest place on the board** (3.66%): Go to Jail, three doubles and
+  the jail cards all send pawns there.
+- **Next come squares a couple of rolls past Jail, and card targets.** Caddebostan
+  (2.95%) is the most visited property, followed by Başlangıç (2.87%), Mecidiyeköy
+  (2.85%) and Kabataş Vapur İskelesi (2.84%). Pawns leaving Jail pass this stretch
+  often, and cards send pawns straight to Caddebostan, Başlangıç and the nearest
+  station.
+- **The first side is the quietest.** Kasımpaşa (1.96%), the first Kamu Fonu (1.98%)
+  and Dolapdere (1.99%) are the least visited squares on the board.
+
+The view can switch between **Geliş** (every stop, including ones a card moves the pawn
+away from) and **Final** (where each roll ends); see
+[What is counted, and how](#what-is-counted-and-how).
+
+## The cards are part of the simulation
+
+![The Chance and Community Chest decks as listed in the app](docs/images/cards.png)
+
+Cards are not modelled as fixed probabilities: each game shuffles both 16-card decks,
+cards are drawn from the top and go back to the bottom, and a "Get Out of Jail Free"
+card stays with the player until it is used. 10 of the 16 Chance cards move the pawn;
+in Community Chest only 2 do. The **Kartlar** button in the app lists both decks.
+
+## About
+
+The system only rolls dice and moves: there is no property, rent, money or houses/hotels.
+Every rule that affects movement is implemented: rolling again on doubles, jail on three
+doubles in a row, the Go to Jail square, the rules for getting out of jail, and Chance /
+Community Chest cards that are actually drawn (shuffled deck, a drawn card goes back to
+the bottom, the "Get Out of Jail Free" card stays with the player).
+
+For design and rule details see [PLAN.md](PLAN.md).
+
+## Setup
+
+Requires Node 22 or later.
 
 ```bash
 npm install
@@ -23,220 +68,149 @@ npm install
 npm test
 ```
 
-Motorun çalışma zamanı bağımlılığı yoktur; `src/` altında `cli.ts` dışındaki dosyalar
-`fs`, `process`, `console` kullanmaz ve tarayıcıda da çalışır. Tek çalışma zamanı
-bağımlılığı olan `three` yalnızca `web/` altındaki görselleştirme içindir.
+The engine has no runtime dependencies; apart from `cli.ts`, nothing under `src/` uses
+`fs`, `process` or `console`, so it also runs in the browser. The only runtime
+dependency, `three`, is used solely by the visualization under `web/`.
 
-## Kullanım
+## Usage
 
 ```bash
 npx tsx src/cli.ts --players 4 --games 1000 --turns 1000 --jail-pay 0.6 --seed 42 --out results/run1.json
 ```
 
-Araç sonucu JSON olarak yazar ve terminale `finalPct`'ye göre sıralı bir tablo,
-Kodes özeti ve grup toplamlarını basar.
+The tool writes the result as JSON and prints a table sorted by `finalPct`, a jail
+summary and group totals to the terminal.
 
-| Seçenek | Varsayılan | Açıklama |
-|---------|-----------|----------|
-| `--players <n>` | `4` | Piyon sayısı, 2–6. |
-| `--games <n>` | `100` | Oyun sayısı. Her oyun yeni karıştırılmış destelerle ve piyonlar Başlangıç'ta başlar. |
-| `--turns <n>` | `1000` | Her oyunda **oyuncu başına** tur sayısı. Toplam tur = `players × games × turns`. |
-| `--jail-pay <p>` | `0.5` | 0–1. Kodes'e her girişte bu olasılıkla "hemen öde" stratejisi seçilir; diğerleri çift atmayı dener. |
-| `--seed <n>` | rastgele | 32-bit tam sayı. Aynı seed + aynı parametreler birebir aynı sonucu verir. |
-| `--edition <ad>` | `istanbul` | Tahta/kart verisi. Şimdilik yalnızca `istanbul`. |
-| `--per-game` | kapalı | Oyun bazında final sayımlarını da JSON'a yazar (varyans analizi için). |
-| `--out <dosya>` | `results/<zaman>-<seed>.json` | JSON çıktı yolu. Zaman damgası UTC'dir. |
-| `--help` | | Yardım. |
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--players <n>` | `4` | Number of pawns, 2–6. |
+| `--games <n>` | `100` | Number of games. Each game starts with freshly shuffled decks and all pawns on Go. |
+| `--turns <n>` | `1000` | Turns **per player** in each game. Total turns = `players × games × turns`. |
+| `--jail-pay <p>` | `0.5` | 0–1. On every jail entry the "pay immediately" strategy is chosen with this probability; otherwise the player tries to roll a double. |
+| `--seed <n>` | random | 32-bit integer. The same seed with the same parameters gives exactly the same result. |
+| `--edition <name>` | `istanbul` | Board/card data. Only `istanbul` for now. |
+| `--per-game` | off | Also writes per-game final counts to the JSON (for variance analysis). |
+| `--out <file>` | `results/<time>-<seed>.json` | JSON output path. The timestamp is in UTC. |
+| `--help` | | Help. |
 
-Seçenekler `--games 100` veya `--games=100` biçiminde yazılabilir. Geçersiz değerde
-araç açıklayıcı bir hata basıp 1 koduyla çıkar.
+Options can be written as `--games 100` or `--games=100`. On an invalid value the tool
+prints an explanatory error and exits with code 1. (The CLI's messages are in Turkish.)
 
-Diğer komutlar: `npm run sim -- <seçenekler>` (CLI kısayolu), `npm run typecheck`
-(motor + web), `npm run build` (motoru `dist/` altına derler).
+Other commands: `npm run sim -- <options>` (CLI shortcut), `npm run typecheck`
+(engine + web), `npm run build` (compiles the engine to `dist/`).
 
-### Kod içinden
+## Visualization
 
-```ts
-import { runSimulation } from "./src/simulate.js";
-
-const result = runSimulation(
-  { players: 4, games: 100, turnsPerGame: 1000, jailPayProbability: 0.6, seed: 42 },
-  { onProgress: (done, total) => {} },
-);
-```
-
-Verilmeyen alanlar varsayılanlarla doldurulur; seed verilmezse saatten üretilir ve
-`result.config.seed` içinde raporlanır.
-
-## Görselleştirme
-
-Tarayıcıda çalışan 3D arayüz: tahta, piyonlar, zarlar ve kart desteleri; altta
-Başlat/Durdur ve hız kaydırıcısı; canlı güncellenen dağılım görünümü. Motoru doğrudan
-kullanır, yani arayüzdeki sayılar aynı seed ile CLI'ın ürettikleriyle birebir aynıdır.
+A 3D interface that runs in the browser: board, pawns, dice and card decks; a
+Start/Stop button and a speed slider at the bottom; a distribution view that updates
+live. It drives the engine directly, so with the same seed its numbers are exactly the
+ones the CLI produces. The interface is in Turkish.
 
 ```bash
 npm run dev
 ```
 
-Vite'ın yazdığı adresi (varsayılan `http://localhost:5173`) tarayıcıda açın.
-Statik derleme için `npm run build:web` (çıktı `dist-web/`), derlenmiş hali denemek
-için `npm run preview`.
+Open the address Vite prints (by default `http://localhost:5173`) in a browser.
+`npm run build:web` makes a static build (output in `dist-web/`); `npm run preview`
+serves the built version.
 
-### Kontroller
+### Controls
 
-- **Başlat / Durdur / Devam Et**: alttaki büyük buton; `Boşluk` tuşu da aynı işi yapar.
-  Durdurulduğunda süren hamlenin animasyonu tamamlanır, yeni tur başlamaz.
-- **Hız kaydırıcısı**: 0,5 – 1.000.000 tur/sn, logaritmik. "Tur" bir oyuncunun sırasıdır.
-- **Dağılımı Göster**: tahtaya üstten bakan ısı haritası (aşağıda). `Esc` kapatır.
-- **Kartlar**: Şans ve Kamu Fonu destelerinin içeriği; aynı kartlar adediyle tek satırda. `Esc` kapatır.
-- **Sıfırla**: sayaçları ve piyonları başa alır, ayarlar panelindeki değerleri uygular.
-- **Ayarlar** (sağ üst): piyon sayısı (2–6), Kodes'te hemen ödeyenlerin oranı, seed
-  (boşsa rastgele seçilir ve sol üstte gösterilir), oyun başına tur (boşsa tek oyun
-  kesintisiz sürer). Henüz tur oynanmadıysa değişiklik anında uygulanır; koşu verisi
-  varken **Uygula ve Sıfırla** ile uygulanır. Simülasyon çalışırken ayarlar kilitlidir.
-- Fareyle sürükleyerek kamera döndürülür, tekerlekle yakınlaştırılır.
+- **Başlat / Durdur / Devam Et** (Start / Stop / Resume): the big button at the bottom;
+  the `Space` key does the same. On stop the move in progress finishes its animation and
+  no new turn starts.
+- **Speed slider**: 0.5 – 1,000,000 turns/s, logarithmic. A "turn" is one player's go.
+- **Dağılımı Göster** (Show distribution): a heatmap of the board seen from above (see
+  below). `Esc` closes it.
+- **Kartlar** (Cards): the contents of the Chance and Community Chest decks; identical
+  cards are listed once with their count. `Esc` closes it.
+- **Sıfırla** (Reset): puts counters and pawns back to the start and applies the values
+  in the settings panel.
+- **Ayarlar** (Settings, top right): number of pawns (2–6), share of players who pay
+  immediately in jail, seed (picked at random when empty and shown at the top left),
+  turns per game (when empty a single game runs without end). Before any turn has been
+  played a change takes effect immediately; once there is run data it is applied with
+  **Uygula ve Sıfırla** (Apply and reset). Settings are locked while the simulation runs.
+- Drag with the mouse to rotate the camera, use the wheel to zoom.
 
-### Hız rejimleri
+### Speed regimes
 
-| Rejim | Hız | Ne görünür |
-|-------|-----|------------|
-| Animasyon | ≤ 10 tur/sn | Zar yuvarlanır, piyon kare kare zıplar, çekilen kart gösterilir. Kartla ileri gitme ve Kodes'e giriş tek bir yüksek yayla, "3 kare geri" geriye zıplayarak oynar. |
-| Hızlı | 10–60 tur/sn | Zar değeri doğrudan görünür, piyon turun bittiği kareye tek hareketle kayar. |
-| Turbo | > 60 tur/sn | Animasyon yoktur; piyonlar her karede güncel konumlarına ışınlanır. Sol üstteki "Hız" hedefi değil, ölçülen hızı gösterir. |
+| Regime | Speed | What you see |
+|--------|-------|--------------|
+| Animated | ≤ 10 turns/s | The dice roll, the pawn hops square by square, the drawn card is shown. Moving forward by card and going to jail play as a single high arc; "go back 3 squares" hops backwards. |
+| Quick | 10–60 turns/s | The dice values appear directly; the pawn slides in one move to the square where the turn ends. |
+| Turbo | > 60 turns/s | No animation; pawns jump to their current position every frame. "Hız" (Speed) at the top left shows the measured speed, not the target. |
 
-Kodes'teki piyonlar hücrenin içinde, ziyaretçiler köşenin dış şeridinde durur. Elinde
-"Kodes'ten Ücretsiz Çık" kartı olan piyonun yanında küçük bir kart görünür.
+Pawns in jail stand inside the cell; visitors stand on the outer strip of the corner. A
+pawn holding a "Get Out of Jail Free" card has a small card next to it.
 
-### Dağılım görünümü
+### Distribution view
 
-Her kare, seçilen sayaca (**Geliş** veya **Final**) göre renklendirilir ve yüzdesi
-üzerine yazılır; Kodes köşesinde hücre (Kodes'e girişler) ile dış şerit (Sadece
-Ziyaretçi) ayrıdır. Renk ölçeği verinin en düşük ve en yüksek değeri arasına yayılır
-(lejantta ikisi de yazar); kareler arasındaki fark bir iki yüzde puanı olduğu için
-sıfırdan başlayan bir ölçekte hepsi aynı tonda görünürdü. Yanda yüzdeye göre sıralı
-kare tablosu ve grup toplamları vardır; bir karenin üzerine gelince geliş ve final
-sayıları birlikte görünür. Simülasyon sürerken saniyede birkaç kez güncellenir.
-**JSON indir** o anki sonucu aşağıdaki şemayla kaydeder.
+Each square is coloured by the selected counter (**Geliş** = landings, or **Final**) and
+its percentage is written on it; in the jail corner the cell (jail entries) and the outer
+strip (Just Visiting) are separate. The colour scale spans the lowest to the highest value
+in the data (the legend shows both); squares differ by only a percentage point or two, so
+on a scale starting at zero they would all look the same shade. Beside the board there is
+a table of squares sorted by percentage and the group totals; hovering a square shows its
+landing and final counts together. It refreshes a few times a second while the simulation
+runs. **JSON indir** (Download JSON) saves the current result, in the same format as the CLI.
 
-Arayüzde kesintisiz modda `N` tam tur (her oyuncu `N` kez) oynandığında sonuç,
-`npx tsx src/cli.ts --games 1 --turns N` ile aynı seed ve ayarlarla üretilenle aynıdır.
+In endless mode, once `N` full rounds (each player `N` times) have been played in the
+interface, the result equals the one produced by `npx tsx src/cli.ts --games 1 --turns N`
+with the same seed and settings.
 
-## Neyin nasıl sayıldığı
+### Deployment
 
-- **Geliş (`landings`)**: piyonun bir karede her duruşu, ara konaklamalar dahil.
-  Şans'a gelip "Yeniköy'e ilerle" çekilirse hem Şans hem Yeniköy sayacı artar.
-- **Final (`finalLandings`)**: bir zar atışının, kartlar çözümlendikten sonra bittiği
-  yer. Her atış en fazla bir final üretir; çiftle kazanılan ek atış ayrı bir finaldir.
-- **Kodes**: 10 numaralı kare yalnızca "Sadece Ziyaretçi" gelişlerini sayar. Kodes'e
-  girişler ayrı bir kovadadır (`jail.entries`) ve giren atışın finali sayılır.
-  Kodes'e Gir (30) karesine gelmek `landings[30]`'u artırır ama orada hiç final olmaz.
-- **Kodes'te geçen tur (`jail.turnsInJail`)**: oyuncunun çift atamayıp içeride
-  kaldığı turlar. Bunlar kareye geliş değildir.
-- **Kodes'ten çıkış**: Elinde "Kodes'ten Ücretsiz Çık" kartı olan oyuncu kartı ilk
-  turda kullanır (iki kartı varsa önce Şans'ınkini). Yoksa girişte seçilen strateji
-  uygulanır: "öde" → ilk turda çıkar ve normal tur oynar (çift atarsa tekrar atar);
-  "zar at" → çift atarsa o zarla çıkar ve tekrar atmaz, üçüncü başarısız atışta
-  ödeyip aynı zarla ilerler.
+The site is hosted on Cloudflare Pages, connected to this GitHub repository; every push
+to `main` is built and published. The project settings are:
 
-Buradan şu eşitlikler çıkar (testlerde doğrulanır):
-
-```
-totalLandings      = Σ squares.landings      + jail.entries
-totalFinalLandings = Σ squares.finalLandings + jail.entries
-totalRolls         = totalFinalLandings      + jail.turnsInJail
+```txt
+Build command: npm run build:web
+Build output directory: dist-web
+Root directory: /
 ```
 
-## JSON şeması
+## What is counted, and how
 
-```jsonc
-{
-  "config": {
-    "edition": "istanbul", "players": 4, "games": 1000, "turnsPerGame": 1000,
-    "jailPayProbability": 0.6, "seed": 42, "trackPerGame": false
-  },
-  "meta": {
-    "totalTurns": 4000000,          // players × games × turnsPerGame
-    "totalRolls": 4718438,          // atılan zar çifti sayısı
-    "totalLandings": 5012478,
-    "totalFinalLandings": 4624842,
-    "elapsedMs": 143,
-    "generatedAt": "2026-10-13T22:37:31.604Z"
-  },
-  "squares": [                      // 40 kayıt, tahta sırasıyla; index 10 = Sadece Ziyaretçi
-    { "index": 0, "name": "Başlangıç", "type": "go", "group": null,
-      "landings": 144542, "landingPct": 2.8836,       // landings / totalLandings × 100
-      "finalLandings": 144542, "finalPct": 3.1253 }   // finalLandings / totalFinalLandings × 100
-  ],
-  "jail": {
-    "entries": 182558,
-    "entryPct": 3.6421,             // entries / totalLandings × 100
-    "finalPct": 3.9473,             // entries / totalFinalLandings × 100
-    "byReason": { "square": 121015, "chance_card": 22048, "chest_card": 23018, "three_doubles": 16477 },
-    "turnsInJail": 93596,
-    "turnsInJailPctOfTurns": 2.3399 // turnsInJail / totalTurns × 100
-  },
-  "groups": [                       // renk grupları + "ulaşım" + "kamu kuruluşu"
-    { "group": "kahverengi", "squares": [1, 3],
-      "landings": 197743, "landingPct": 3.945, "finalLandings": 197743, "finalPct": 4.2757 }
-  ],
-  "cards": { "chanceDraws": 345937, "chestDraws": 359618 },
-  "dice": {
-    "doubles": 787117, "doublesPct": 16.6817,
-    "sums": { "2": 131319, "3": 261982, "...": 0, "12": 131442 }
-  },
-  "perGame": null                   // --per-game ile: [{ "finalLandings": [40 sayı], "jailEntries": n }, ...]
-}
-```
+- **Landings (Geliş)**: every stop of a pawn on a square, including intermediate
+  ones. Landing on Chance and drawing "advance to Yeniköy" increments both the Chance and
+  the Yeniköy counters.
+- **Finals (Final)**: where a dice roll ends after cards are resolved. Each roll
+  produces at most one final; the extra roll earned with a double is a separate final.
+- **Jail**: square 10 counts only "Just Visiting" landings. Jail entries are counted
+  separately and count as the final of the roll that sent the pawn there. Landing on Go
+  to Jail counts as a landing there, but never as a final.
+- **Turns spent in jail**: turns in which the player failed to roll
+  a double and stayed inside. These are not landings on a square.
+- **Getting out of jail**: a player holding a "Get Out of Jail Free" card uses it on the
+  first turn (with two cards, the Chance one first). Otherwise the strategy chosen on
+  entry applies: "pay" → gets out on the first turn and plays a normal turn (rolls again
+  on a double); "roll" → on a double gets out with that roll and does not roll again; on
+  the third failed roll pays and moves with that same roll.
 
-Yüzdeler 4 ondalığa yuvarlanır; kesin değer gerekiyorsa ham sayılardan hesaplayın.
-`squares` + `jail` yüzdeleri 100'e toplanır.
+## Data sources
 
-## Proje yapısı
+**Board.** Monopoly İstanbul (the classic edition with neighbourhood names). Square names
+and colour groups are based on World of Monopoly's Turkey page (Hasbro standard ref. 0695,
+1995 listing), Wikipedia's "List of licensed and localized editions of Monopoly: Europe"
+page and colour-group listings in dictionaries. Corner and special square names
+(Başlangıç, Kodes, Ücretsiz Otopark, Kodes'e Gir, Şans, Kamu Fonu) come from Hasbro's 2010
+Turkish rulebook. Square 23 was confirmed as **Erenköy** by the user. The layout is the
+standard Monopoly layout.
 
-```
-data/board.istanbul.json   40 kare
-data/cards.istanbul.json   16 Şans + 16 Kamu Fonu
-src/types.ts               ortak tipler
-src/rng.ts                 tohumlu RNG (xoshiro128**), rollDie, shuffle
-src/board.ts               tahta yükleme/doğrulama, nearestStation / nearestUtility
-src/cards.ts               kart yükleme/doğrulama, Deck
-src/engine.ts              playTurn: hareket, Kodes, kart çözümleme, tur olayları (TurnObserver)
-src/stats.ts               sayaçlar ve sonuç özeti
-src/simulate.ts            runSimulation, yapılandırma doğrulaması
-src/session.ts             Session: tur tur sürülebilen simülasyon (arayüz bunu kullanır)
-src/cli.ts                 komut satırı aracı
-web/index.html             arayüz iskeleti
-web/src/main.ts            kurulum ve bağlama
-web/src/controller.ts      durum makinesi ve ana döngü (hız rejimleri)
-web/src/speed.ts           kaydırıcı ↔ hız eşlemesi
-web/src/layout.ts          tahta geometrisi, piyon yuvaları
-web/src/timeline.ts        tur olayları → animasyon adımları
-web/src/boardArt.ts        tahtanın Canvas 2D çizimi (3D doku ve dağılım görünümü ortak)
-web/src/scene/             Three.js sahnesi: tahta, piyonlar, zarlar, desteler
-web/src/ui/                kontroller, sayaçlar, ayarlar, dağılım görünümü, kart listesi
-test/                      vitest testleri (test/web: arayüzün DOM'suz modülleri)
-```
+**Cards.** The exact text of the Turkish cards could not be found online. The movement
+cards are the İstanbul-board equivalents of Hasbro's international standard set; the
+presence of "advance to the nearest station" (×2) and "advance to the nearest utility" in
+the Chance deck was confirmed by the user from the deck in the box. Cards without a
+movement effect do not affect the simulation, so they appear in the data file as "Düz
+kart" (plain card); only their count matters (5 in Chance, 13 in Community Chest).
 
-Tahtadaki her şey kodla çizilir; Hasbro'ya ait logo, maskot veya görsel kullanılmaz.
+To add another edition, put new board and card files under `data/` and add the edition to
+the lists in `src/board.ts`, `src/cards.ts` and `src/types.ts`; the data is validated on
+load.
 
-## Veri kaynakları
+---
 
-**Tahta.** Monopoly İstanbul (semt isimli klasik baskı). Kare adları ve renk grupları
-World of Monopoly'nin Türkiye sayfasına (Hasbro standart ref. 0695, 1995 listesi),
-Wikipedia'daki "List of licensed and localized editions of Monopoly: Europe"
-sayfasına ve sözlüklerdeki renk grubu dökümlerine dayanır. Köşe ve özel kare adları
-(Başlangıç, Kodes, Ücretsiz Otopark, Kodes'e Gir, Şans, Kamu Fonu) Hasbro'nun 2010
-tarihli Türkçe kılavuzundan alınmıştır. 23 numaralı kare kullanıcı tarafından
-**Erenköy** olarak doğrulanmıştır. Yerleşim standart Monopoly yerleşimidir.
-
-**Kartlar.** Türkçe kartların birebir metni çevrimiçi bulunamadı. Hareket kartları
-Hasbro'nun uluslararası standart setinin İstanbul tahtasındaki karşılıklarıdır;
-Şans destesindeki "en yakın ulaşım aracına ilerle" (×2) ve "en yakın kamu
-kuruluşuna ilerle" kartlarının varlığı kullanıcı tarafından kutudaki desteden
-doğrulanmıştır. Hareket etkisi olmayan kartların metni simülasyonu etkilemediği
-için bunlar veri dosyasında "Düz kart" olarak yer alır; yalnızca sayıları
-önemlidir (Şans'ta 5, Kamu Fonu'nda 13).
-
-Başka bir baskı eklemek için `data/` altına yeni tahta ve kart dosyaları koyup
-`src/board.ts`, `src/cards.ts` ve `src/types.ts` içindeki baskı listelerine eklemek
-yeterlidir; yükleme sırasında veriler doğrulanır.
+Everything on the board is drawn in code; no Hasbro logos, mascots or artwork are used.
+Monopoly is a trademark of Hasbro; this is an independent project, not affiliated with or
+endorsed by Hasbro.
